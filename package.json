@@ -1,0 +1,24 @@
+{
+  "name": "device-provisioning",
+  "version": "1.0.0",
+  "description": "Use past device configurations to predict future device configurations.",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.16.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+  	"start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevind123/device-provisioning.git"
+  },
+  "author": "Kevin Dyer",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kevind123/device-provisioning/issues"
+  },
+  "homepage": "https://github.com/kevind123/device-provisioning#readme"
+}
