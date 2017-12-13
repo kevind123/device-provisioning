@@ -1,0 +1,202 @@
+[
+	{
+		"name": "displayName",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "deviceIdentifier",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "address",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "saddress",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "systemStatus",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "vendorName",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "vendorIdentifier",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "modelName",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "standardVersion",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "softwareVersion",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "bacnetNetwork",
+		"type": "STRING",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "multiread",
+		"type": "INTEGER",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "router",
+		"type": "INTEGER",
+		"mode": "NULLABLE"
+	},
+	{
+		"name": "dataPoints",
+		"type": "RECORD",
+		"mode": "REPEATED",
+		"fields": [
+			{
+				"name": "objectType",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "objectIdentifier",
+				"type": "INTEGER",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "objectName",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "value",
+				"type": "FLOAT",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "units",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "description",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			}
+		]
+	},
+	{
+		"name": "product",
+		"type": "RECORD",
+		"mode": "REQUIRED",
+		"fields": [
+			{
+				"name": "productCd",
+				"type": "STRING",
+				"mode": "REQUIRED"
+			},
+			{
+				"name": "name",
+				"type": "STRING",
+				"mode": "REQUIRED"
+			},
+			{
+				"name": "make",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "model",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "imageLink",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "baseProtocol",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			}
+		]
+	},
+	{
+		"name": "device",
+		"type": "RECORD",
+		"mode": "REQUIRED",
+		"fields": [
+			{
+				"name": "siteCd",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "deviceCd",
+				"type": "STRING",
+				"mode": "REQUIRED"
+			},
+			{
+				"name": "userCd",
+				"type": "STRING",
+				"mode": "NULLABLE"
+			},
+			{
+				"name": "deviceInfos",
+				"type": "RECORD",
+				"mode": "REPEATED",
+				"fields": [
+					{
+						"name": "deviceInfoCd",
+						"type": "STRING",
+						"mode": "NULLABLE"
+					},
+					{
+						"name": "infoTypeLcd",
+						"type": "STRING",
+						"mode": "NULLABLE"
+					},
+					{
+						"name": "text",
+						"type": "STRING",
+						"mode": "NULLABLE"
+					},
+					{
+						"name": "values",
+						"type": "RECORD",
+						"mode": "NULLABLE",
+						"fields": [
+							{
+								"name": "objectTypeId",
+								"type": "INTEGER",
+								"mode": "NULLABLE"
+							},
+							{
+								"name": "objectIdentifier",
+								"type": "INTEGER",
+								"mode": "NULLABLE"
+							}
+						]
+					}
+				]
+			}
+		]
+	}
+]
