@@ -4,6 +4,7 @@
   "description": "Use past device configurations to predict future device configurations.",
   "main": "index.js",
   "dependencies": {
+    "@google-cloud/bigquery": "^0.11.1",
     "express": "^4.16.2",
     "http": "0.0.0"
   },

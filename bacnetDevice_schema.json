@@ -6,7 +6,7 @@
 	},
 	{
 		"name": "deviceIdentifier",
-		"type": "STRING",
+		"type": "INTEGER",
 		"mode": "NULLABLE"
 	},
 	{
@@ -51,7 +51,7 @@
 	},
 	{
 		"name": "bacnetNetwork",
-		"type": "STRING",
+		"type": "INTEGER",
 		"mode": "NULLABLE"
 	},
 	{
