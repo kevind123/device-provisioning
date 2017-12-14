@@ -75,6 +75,11 @@
 				"mode": "NULLABLE"
 			},
 			{
+				"name": "objectTypeId",
+				"type": "INTEGER",
+				"mode": "NULLABLE"
+			},
+			{
 				"name": "objectIdentifier",
 				"type": "INTEGER",
 				"mode": "NULLABLE"
