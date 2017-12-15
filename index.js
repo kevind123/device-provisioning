@@ -18,7 +18,6 @@ const projectId = 'device-provisioning';
 const datasetId = 'deviceProvisioning';
 const tableId = 'bacnetDevice';
 
-
 // Creates a client
 const bigquery = new BigQuery({
   projectId: projectId,
@@ -127,7 +126,8 @@ app.post('/bacnet_devices', jsonParser, (req, res) => {
 	bigquery
 		.dataset(datasetId)
 		.table(tableId)
-		.insert(record) //should be able to pass in single record (not array)
+		// .insert(record) //should be able to pass in single record (not array)
+		.patch(record)
 		.then(insertErrors => {
 		  console.log('Inserted:');
 		  if (insertErrors && insertErrors.length > 0) {
@@ -157,6 +157,8 @@ app.post('/bacnet_devices/predict', jsonParser, (req, res) => {
 	  .getRows()
 	  .then(results => {
 	    console.log("bigquery results: ", results)
+
+	    console.log("results count: ", results.length)
 	    res.status(200);
 	    res.json(results);
 	  })
@@ -167,6 +169,39 @@ app.post('/bacnet_devices/predict', jsonParser, (req, res) => {
 	    res.json(err)
 	  });
 });
+
+//Update existing record
+app.put('/bacnet_devices', (req, res) => {
+	// if (!req.body) return res.sendStatus(400) //why is this getting thrown? has to do with put
+
+	//EXAMPLE UPDATE QUERY
+	// UPDATE dataset.Inventory
+	// SET quantity = quantity - 10
+	// WHERE product like '%washer%'
+
+	const sqlQuery = "SELECT deviceName FROM `${projectId}.${datasetId}.${tableId}`;"; //are these quotes right?
+	const options = {
+		query: sqlQuery,
+		useLegacySql: false // Use standard SQL syntax for queries.
+	}
+
+	bigquery
+		// .startQuery(options) //Use JOB
+		.query(options)
+		.then(results => {
+			console.log("query results: ", results);
+
+			res.status(200);
+			res.json(results);
+		})
+		.catch(err => {
+      console.error('QUERY ERROR:', err);
+
+      res.status(409);
+      res.json(err);
+    });
+
+})
 
 
 server.listen(8080, () => {
