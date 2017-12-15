@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const BigQuery = require('@google-cloud/bigquery');
 const {testDevice} = require('./fake-bacnet-device');
 const {bacnetDeviceRequest} = require('./fake-bacnet-device-request');
+const {flattenObject} = require('./utils');
 
 //TODO: use Kubernetes to hide this
 const keyFilename = '/Users/kevind/candi/device-provisioning/device-provisioning-5cbd98bb6878.json';
@@ -109,14 +110,14 @@ app.post('/bacnet_devices', jsonParser, (req, res) => {
 			deviceCd,
 			userCd,
 			deviceInfos: deviceInfos.filter(info =>
-				info.infoTypeLcd === 'IT_SUB_ADDRESS_GENERIC' && info.values
+				info.infoTypeLcd === 'IT_SUB_ADDRESS_GENERIC' &&
+				info.values &&
+				info.values.length > 1
 			).map(info => {
 				return {
 					...info,
-					values: {
-						objectTypeId: parseInt(info.values[0]),
-						objectIdentifier: parseInt(info.values[1])
-					}
+					objectTypeId: parseInt(info.values[0]),
+					objectIdentifier: parseInt(info.values[1])
 				}
 			})
 		}
@@ -171,22 +172,40 @@ app.post('/bacnet_devices/predict', jsonParser, (req, res) => {
 });
 
 //Update existing record
-app.put('/bacnet_devices', (req, res) => {
+app.put('/bacnet_devices', jsonParser, (req, res) => {
 	// if (!req.body) return res.sendStatus(400) //why is this getting thrown? has to do with put
 
 	//EXAMPLE UPDATE QUERY
 	// UPDATE dataset.Inventory
-	// SET quantity = quantity - 10
-	// WHERE product like '%washer%'
+	// SET quantity = quantity - 10, other = 'bla'
+	// WHERE product like '%washer%' 
 
-	const sqlQuery = "SELECT deviceName FROM `${projectId}.${datasetId}.${tableId}`;"; //are these quotes right?
+	//TODO: replace with req.body or whatever
+	//NOTE: will need to check for each individual value, same as in the create. Should make common method candiApiToStore
+	// How to add I replace device.deviceInfos - i flattened the value attribute so it should be easy to completely replace
+	console.log("req.body: ", req.body)
+	console.log("flattened req.body: ", flattenObject(req.body))
+	const deviceCd = '123abc';
+	const siteCd = '123abcd'; //TODO: replace with req
+	const updateAttr = {
+		displayName: 'Abuyena'
+	}
+	const updateArr = []
+	for (let attr in updateAttr) {
+		updateArr.push(`${attr}=${updateAttr[attr]}`)
+	}
+	const updateStr = updateArr.join(', ');
+	const sqlQuery = `\
+		UPDATE \`${projectId}.${datasetId}.${tableId}\`\
+		SET ${updateStr}\
+		WHERE device.deviceCd=${deviceCd} AND device.siteCd=${siteCd};`
 	const options = {
 		query: sqlQuery,
-		useLegacySql: false // Use standard SQL syntax for queries.
+		useLegacySql: false // Use standard SQL syntax for queries. - needed for DELETE and UPDATE
 	}
 
 	bigquery
-		// .startQuery(options) //Use JOB
+		// .startQuery(options) //Run as JOB
 		.query(options)
 		.then(results => {
 			console.log("query results: ", results);
@@ -210,3 +229,5 @@ server.listen(8080, () => {
 
   console.log(`Example app listening at http://${host}:${port}`);
 });
+
+
