@@ -29,7 +29,6 @@ app.get('/', (req, res) => {
   res.send(testDevice);
 });
 
-
 //save device provisioning configurations
 app.post('/bacnet_devices', jsonParser, (req, res) => {
 	if (!req || !req.body) return res.sendStatus(400)
@@ -81,7 +80,6 @@ app.post('/bacnet_devices', jsonParser, (req, res) => {
 		})
 	}
 
-
 	const record = {
 		displayName,
 		deviceIdentifier,
@@ -115,7 +113,9 @@ app.post('/bacnet_devices', jsonParser, (req, res) => {
 				info.values.length > 1
 			).map(info => {
 				return {
-					...info,
+					deviceInfoCd: info.deviceInfoCd,
+					infoTypeLcd: info.infoTypeLcd,
+					text: info.text,
 					objectTypeId: parseInt(info.values[0]),
 					objectIdentifier: parseInt(info.values[1])
 				}
@@ -127,8 +127,7 @@ app.post('/bacnet_devices', jsonParser, (req, res) => {
 	bigquery
 		.dataset(datasetId)
 		.table(tableId)
-		// .insert(record) //should be able to pass in single record (not array)
-		.patch(record)
+		.insert(record)
 		.then(insertErrors => {
 		  console.log('Inserted:');
 		  if (insertErrors && insertErrors.length > 0) {
@@ -151,7 +150,6 @@ app.post('/bacnet_devices', jsonParser, (req, res) => {
 app.post('/bacnet_devices/predict', jsonParser, (req, res) => {
 	if (!req.body) return res.sendStatus(400)
 
-	console.log("/bacnet_devices/predict request body: ", req.body);
 	bigquery
 	  .dataset(datasetId)
 	  .table(tableId)
@@ -174,39 +172,17 @@ app.post('/bacnet_devices/predict', jsonParser, (req, res) => {
 //Update existing record
 app.put('/bacnet_devices', jsonParser, (req, res) => {
 	// if (!req.body) return res.sendStatus(400) //why is this getting thrown? has to do with put
+	const options = createUpdateQuery({
+		projectId,
+		datasetId,
+		tableId,
+		reqBody: req.body
+	})
 
-	//EXAMPLE UPDATE QUERY
-	// UPDATE dataset.Inventory
-	// SET quantity = quantity - 10, other = 'bla'
-	// WHERE product like '%washer%' 
-
-	//TODO: replace with req.body or whatever
-	//NOTE: will need to check for each individual value, same as in the create. Should make common method candiApiToStore
-	// How to add I replace device.deviceInfos - i flattened the value attribute so it should be easy to completely replace
-	console.log("req.body: ", req.body)
-	console.log("flattened req.body: ", flattenObject(req.body))
-	const deviceCd = '123abc';
-	const siteCd = '123abcd'; //TODO: replace with req
-	const updateAttr = {
-		displayName: 'Abuyena'
-	}
-	const updateArr = []
-	for (let attr in updateAttr) {
-		updateArr.push(`${attr}=${updateAttr[attr]}`)
-	}
-	const updateStr = updateArr.join(', ');
-	const sqlQuery = `\
-		UPDATE \`${projectId}.${datasetId}.${tableId}\`\
-		SET ${updateStr}\
-		WHERE device.deviceCd=${deviceCd} AND device.siteCd=${siteCd};`
-	const options = {
-		query: sqlQuery,
-		useLegacySql: false // Use standard SQL syntax for queries. - needed for DELETE and UPDATE
-	}
-
+	//TODO: uncomment
 	bigquery
-		// .startQuery(options) //Run as JOB
-		.query(options)
+		.startQuery(options) //Run as JOB - necessary to update while buffer stream is still open (from writing)
+		// .query(options)
 		.then(results => {
 			console.log("query results: ", results);
 
@@ -230,4 +206,88 @@ server.listen(8080, () => {
   console.log(`Example app listening at http://${host}:${port}`);
 });
 
+
+function createUpdateQuery({
+	projectId,
+	datasetId,
+	tableId,
+	reqBody: {
+		device: {
+			siteCd, //NOTE: do not change
+			deviceCd, // do not change
+			userCd,
+			deviceInfos
+		} = {},
+		product: {
+			productCd,
+			name,
+			make,
+			model,
+			imageLink,
+			baseProtocol
+		} = {},
+		discovered //Should never need to update this...
+	} = {}
+}) {
+	let updateArr = []
+
+	if (!deviceCd || !siteCd) {
+		console.error("cannot update record without deviceCd and siteCd")
+		return
+	}
+
+	if (userCd) {
+		updateArr.push(`device.userCd='${userCd}'`)
+	}
+
+	//TODO: determing objectTypeId and objectIdentifier
+	if (deviceInfos) {
+		const infoStructs = deviceInfos.map(info => {
+			return `STRUCT(\
+				"deviceInfoCd" as \`${info.deviceInfoCd}\`,\
+				"infoTypeLcd" as \`${info.infoTypeLcd}\`,\
+				"text" as \`${info.text}\`,\
+				"objectTypeId" as \`${parseInt(info.values[0])}\`,\
+				"objectIdentifier" as \`${parseInt(info.values[1])}\`\
+			)`
+		})
+		updateArr.push(`device.deviceInfos=[${infoStructs.join(', ')}]`)
+	}
+	if (productCd) {
+		updateArr.push(`product.productCd='${productCd}'`)
+	}
+	if (name) {
+		updateArr.push(`product.name='${name}'`)
+	}
+	if (make) {
+		updateArr.push(`product.make='${make}'`)
+	}
+	if (model) {
+		updateArr.push(`product.model='${model}'`)
+	}
+	if (imageLink) {
+		updateArr.push(`product.model='${imageLink}'`)
+	}
+	if (baseProtocol) {
+		updateArr.push(`product.baseProtocol='${baseProtocol}'`)
+	}
+
+	if (discovered) {
+		console.log("Should never need to update Discovered Device Attributes")
+	}
+
+	const sqlQuery = `\
+		UPDATE \`${projectId}.${datasetId}.${tableId}\`\
+		SET ${updateArr.join(', ')}\
+		WHERE device.deviceCd='${deviceCd}' AND device.siteCd='${siteCd}';`
+	const options = {
+		query: sqlQuery.replace(/\s/g, ''),
+		useLegacySql: false // Use standard SQL syntax for queries. - needed for DELETE and UPDATE
+	}
+
+	console.log("sqlQuery: ", sqlQuery.replace(/\s/g, ''))
+
+	return options
+
+}
 
