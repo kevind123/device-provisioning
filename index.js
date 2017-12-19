@@ -6,6 +6,9 @@ const BigQuery = require('@google-cloud/bigquery');
 const {testDevice} = require('./fake-bacnet-device');
 const {bacnetDeviceRequest} = require('./fake-bacnet-device-request');
 const {flattenObject} = require('./utils');
+const moment = require('moment');
+
+const dateFormat = 'YYYY-MM-DDTHH:mm:ss.SSSZ';
 
 //TODO: use Kubernetes to hide this
 const keyFilename = '/Users/kevind/candi/device-provisioning/device-provisioning-5cbd98bb6878.json';
@@ -25,6 +28,7 @@ const bigquery = new BigQuery({
   keyFilename: keyFilename
 });
 
+//TODO: remove
 app.get('/', (req, res) => {
   res.send(testDevice);
 });
@@ -64,6 +68,7 @@ app.post('/bacnet_devices', jsonParser, (req, res) => {
 			} = {}
 		} = {}
 	} = req.body
+	const createdAt = moment().format(dateFormat)
 
 	let dataPoints = []
 	for (let dpKey in objects) {
@@ -120,7 +125,9 @@ app.post('/bacnet_devices', jsonParser, (req, res) => {
 					objectIdentifier: parseInt(info.values[1])
 				}
 			})
-		}
+		},
+		createdAt,
+		updatedAt: createdAt
 	}
 
 	//save to db
@@ -150,23 +157,55 @@ app.post('/bacnet_devices', jsonParser, (req, res) => {
 app.post('/bacnet_devices/predict', jsonParser, (req, res) => {
 	if (!req.body) return res.sendStatus(400)
 
+	const reqBody = req.body || {}
+	//TODO: create query to find all devices that match
+	const sqlQuery = `\
+		SELECT * FROM \`${projectId}.${datasetId}.${tableId}\`\
+		WHERE vendorName='${reqBody['vendor-name']}' AND \
+			vendorIdentifier='${reqBody['vendor-identifier']}' AND \
+			modelName='${reqBody['model-name']}' AND \
+			standardVersion='${reqBody['standard-version']}'`.replace(/\s+/g, ' ')
+	const options = {
+		query: sqlQuery,
+		useLegacySql: false
+	}
+
+	console.log("sqlQuery: ", sqlQuery)
+
 	bigquery
-	  .dataset(datasetId)
-	  .table(tableId)
-	  .getRows()
-	  .then(results => {
-	    console.log("bigquery results: ", results)
+		// .startQuery(options) //Run as JOB - necessary to update while buffer stream is still open (from writing)
+		.query(options)
+		.then(results => {
+			const predictions = Array.isArray(results) ? results[0] : results
+			console.log("PREDICT query predictions: ", predictions);
 
-	    console.log("results count: ", results.length)
-	    res.status(200);
-	    res.json(results);
-	  })
-	  .catch(err => {
-	    console.error('ERROR:', err);
+			res.status(200);
+			res.json(predictions);
+		})
+		.catch(err => {
+      console.error('PREDICT QUERY ERROR:', err);
 
-	    res.status(409);
-	    res.json(err)
-	  });
+      res.status(409);
+      res.json(err);
+    });
+
+	// bigquery
+	//   .dataset(datasetId)
+	//   .table(tableId)
+	//   .getRows()
+	//   .then(results => {
+	//     console.log("bigquery results: ", results)
+
+	//     console.log("results count: ", results.length)
+	//     res.status(200);
+	//     res.json(results);
+	//   })
+	//   .catch(err => {
+	//     console.error('ERROR:', err);
+
+	//     res.status(409);
+	//     res.json(err)
+	//   });
 });
 
 //Update existing record
@@ -230,6 +269,7 @@ function createUpdateQuery({
 	} = {}
 }) {
 	let updateArr = []
+	const updatedAt = moment().format(dateFormat)
 
 	if (!deviceCd || !siteCd) {
 		console.error("cannot update record without deviceCd and siteCd")
@@ -276,16 +316,21 @@ function createUpdateQuery({
 		console.log("Should never need to update Discovered Device Attributes")
 	}
 
+	//update updatedAt
+	if (updatedAt) {
+		updateArr.push(`updatedAt='${updatedAt}'`)
+	}
+
 	const sqlQuery = `\
 		UPDATE \`${projectId}.${datasetId}.${tableId}\`\
 		SET ${updateArr.join(', ')}\
-		WHERE device.deviceCd='${deviceCd}' AND device.siteCd='${siteCd}';`
+		WHERE device.deviceCd='${deviceCd}' AND device.siteCd='${siteCd}';`.replace(/\s+/g, ' ')
 	const options = {
-		query: sqlQuery.replace(/\s/g, ''),
+		query: sqlQuery,
 		useLegacySql: false // Use standard SQL syntax for queries. - needed for DELETE and UPDATE
 	}
 
-	console.log("sqlQuery: ", sqlQuery.replace(/\s/g, ''))
+	console.log("sqlQuery: ", sqlQuery)
 
 	return options
 
