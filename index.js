@@ -15,7 +15,7 @@ const keyFilename = '/Users/kevind/candi/device-provisioning/device-provisioning
 
 const app = express();
 const server = http.createServer(app);
-const jsonParser = bodyParser.json()
+const jsonParser = bodyParser.json({limit: '5mb'})
 
 // Your Google Cloud Platform project ID
 const projectId = 'device-provisioning';
@@ -36,6 +36,8 @@ app.get('/', (req, res) => {
 //save device provisioning configurations
 app.post('/bacnet_devices', jsonParser, (req, res) => {
 	if (!req || !req.body) return res.sendStatus(400)
+
+	//TODO: need to validate req.body has all necessary info
 	const {
 		discovered: {
 			'display-name': displayName,
