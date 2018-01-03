@@ -25,7 +25,7 @@ const tableId = 'bacnetDevice';
 // Creates a client
 const bigquery = new BigQuery({
   projectId: projectId,
-  keyFilename: keyFilename
+  // keyFilename: keyFilename
 });
 
 //TODO: remove
@@ -173,7 +173,6 @@ app.post('/bacnet_devices/predict', jsonParser, (req, res) => {
 	console.log("sqlQuery: ", sqlQuery)
 
 	bigquery
-		// .startQuery(options) //Run as JOB - necessary to update while buffer stream is still open (from writing)
 		.query(options)
 		.then(results => {
 			const predictions = Array.isArray(results) ? results[0] : results
@@ -188,24 +187,6 @@ app.post('/bacnet_devices/predict', jsonParser, (req, res) => {
       res.status(409);
       res.json(err);
     });
-
-	// bigquery
-	//   .dataset(datasetId)
-	//   .table(tableId)
-	//   .getRows()
-	//   .then(results => {
-	//     console.log("bigquery results: ", results)
-
-	//     console.log("results count: ", results.length)
-	//     res.status(200);
-	//     res.json(results);
-	//   })
-	//   .catch(err => {
-	//     console.error('ERROR:', err);
-
-	//     res.status(409);
-	//     res.json(err)
-	//   });
 });
 
 //Update existing record
@@ -221,7 +202,6 @@ app.put('/bacnet_devices', jsonParser, (req, res) => {
 	//TODO: uncomment
 	bigquery
 		.startQuery(options) //Run as JOB - necessary to update while buffer stream is still open (from writing)
-		// .query(options)
 		.then(results => {
 			console.log("query results: ", results);
 
